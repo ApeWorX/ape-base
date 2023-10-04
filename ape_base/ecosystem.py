@@ -1,39 +1,40 @@
-from typing import Optional, Type, Union, cast
+from typing import Dict, Optional, Type, cast
 
 from ape.api import TransactionAPI
 from ape.api.config import PluginConfig
 from ape.api.networks import LOCAL_NETWORK_NAME
-from ape.exceptions import ApeException
 from ape.types import TransactionSignature
+from ape.utils import DEFAULT_LOCAL_TRANSACTION_ACCEPTANCE_TIMEOUT
 from ape_ethereum.ecosystem import Ethereum, NetworkConfig
 from ape_ethereum.transactions import DynamicFeeTransaction, StaticFeeTransaction, TransactionType
-from eth_typing import HexStr
-from eth_utils import add_0x_prefix
 
 NETWORKS = {
     # chain_id, network_id
     "mainnet": (8453, 8453),
     "goerli": (84531, 84531),
 }
-
-
-class ApeBaseError(ApeException):
-    """
-    Raised in the ape-base plugin.
-    """
+_SECOND_STATIC_TYPE = 126
 
 
 def _create_network_config(
     required_confirmations: int = 1, block_time: int = 2, **kwargs
 ) -> NetworkConfig:
     return NetworkConfig(
-        required_confirmations=required_confirmations, block_time=block_time, **kwargs
+        block_time=block_time,
+        default_transaction_type=TransactionType.STATIC,
+        required_confirmations=required_confirmations,
+        **kwargs,
     )
 
 
-def _create_local_config(default_provider: Optional[str] = None) -> NetworkConfig:
+def _create_local_config(default_provider: Optional[str] = None, **kwargs) -> NetworkConfig:
     return _create_network_config(
-        required_confirmations=0, block_time=0, default_provider=default_provider
+        block_time=0,
+        default_provider=default_provider,
+        gas_limit="max",
+        required_confirmations=0,
+        transaction_acceptance_timeout=DEFAULT_LOCAL_TRANSACTION_ACCEPTANCE_TIMEOUT,
+        **kwargs,
     )
 
 
@@ -55,14 +56,35 @@ class Base(Ethereum):
         """
         Returns a transaction using the given constructor kwargs.
         Overridden because does not support
+
         **kwargs: Kwargs for the transaction class.
+
         Returns:
             :class:`~ape.api.transactions.TransactionAPI`
         """
 
-        transaction_type = _get_transaction_type(kwargs.get("type"))
-        kwargs["type"] = transaction_type.value
-        txn_class = _get_transaction_cls(transaction_type)
+        transaction_types: Dict[int, Type[TransactionAPI]] = {
+            TransactionType.STATIC.value: StaticFeeTransaction,
+            TransactionType.DYNAMIC.value: DynamicFeeTransaction,
+            _SECOND_STATIC_TYPE: StaticFeeTransaction,
+        }
+
+        if "type" in kwargs:
+            if kwargs["type"] is None:
+                # The Default is pre-EIP-1559.
+                version = self.default_transaction_type.value
+            elif not isinstance(kwargs["type"], int):
+                version = self.conversion_manager.convert(kwargs["type"], int)
+            else:
+                version = kwargs["type"]
+
+        elif "gas_price" in kwargs:
+            version = TransactionType.STATIC.value
+        else:
+            version = self.default_transaction_type.value
+
+        kwargs["type"] = version
+        txn_class = transaction_types[version]
 
         if "required_confirmations" not in kwargs or kwargs["required_confirmations"] is None:
             # Attempt to use default required-confirmations from `ape-config.yaml`.
@@ -76,8 +98,11 @@ class Base(Ethereum):
         if isinstance(kwargs.get("chainId"), str):
             kwargs["chainId"] = int(kwargs["chainId"], 16)
 
-        if "hash" in kwargs:
-            kwargs["data"] = kwargs.pop("hash")
+        elif "chainId" not in kwargs and self.network_manager.active_provider is not None:
+            kwargs["chainId"] = self.provider.chain_id
+
+        if "input" in kwargs:
+            kwargs["data"] = kwargs.pop("input")
 
         if all(field in kwargs for field in ("v", "r", "s")):
             kwargs["signature"] = TransactionSignature(
@@ -86,32 +111,14 @@ class Base(Ethereum):
                 s=bytes(kwargs["s"]),
             )
 
-        return txn_class.parse_obj(kwargs)
+        if "max_priority_fee_per_gas" in kwargs:
+            kwargs["max_priority_fee"] = kwargs.pop("max_priority_fee_per_gas")
+        if "max_fee_per_gas" in kwargs:
+            kwargs["max_fee"] = kwargs.pop("max_fee_per_gas")
 
+        kwargs["gas"] = kwargs.pop("gas_limit", kwargs.get("gas"))
 
-def _get_transaction_type(_type: Optional[Union[int, str, bytes]]) -> TransactionType:
-    if not _type or _type == 126:
-        return TransactionType.STATIC
+        if "value" in kwargs and not isinstance(kwargs["value"], int):
+            kwargs["value"] = self.conversion_manager.convert(kwargs["value"], int)
 
-    if _type is None:
-        _type = TransactionType.STATIC.value
-    elif isinstance(_type, int):
-        _type = f"0{_type}"
-    elif isinstance(_type, bytes):
-        _type = _type.hex()
-
-    suffix = _type.replace("0x", "")
-    if len(suffix) == 1:
-        _type = f"{_type.rstrip(suffix)}0{suffix}"
-    return TransactionType(int(add_0x_prefix(HexStr(_type)), 16))
-
-
-def _get_transaction_cls(transaction_type: TransactionType) -> Type[TransactionAPI]:
-    transaction_types = {
-        TransactionType.STATIC: StaticFeeTransaction,
-        TransactionType.DYNAMIC: DynamicFeeTransaction,
-    }
-    if transaction_type not in transaction_types:
-        raise ApeBaseError(f"Transaction type '{transaction_type}' not supported.")
-
-    return transaction_types[transaction_type]
+        return txn_class(**kwargs)
