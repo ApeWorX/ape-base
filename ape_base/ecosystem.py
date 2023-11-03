@@ -19,7 +19,7 @@ _SECOND_STATIC_TYPE = 126
 def _create_config(
     required_confirmations: int = 1,
     block_time: int = 2,
-    cls: Type[NetworkConfig] = NetworkConfig,
+    cls: Type = NetworkConfig,
     **kwargs,
 ) -> NetworkConfig:
     return cls(
