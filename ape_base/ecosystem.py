@@ -12,6 +12,7 @@ NETWORKS = {
     # chain_id, network_id
     "mainnet": (8453, 8453),
     "goerli": (84531, 84531),
+    "sepolia": (84532, 84532),
 }
 _SECOND_STATIC_TYPE = 126
 
@@ -47,6 +48,8 @@ class BaseConfig(PluginConfig):
     mainnet_fork: ForkedNetworkConfig = _create_local_config(use_fork=True)
     goerli: NetworkConfig = _create_config()
     goerli_fork: ForkedNetworkConfig = _create_local_config(use_fork=True)
+    sepolia: NetworkConfig = _create_config()
+    sepolia_fork: ForkedNetworkConfig = _create_local_config(use_fork=True)
     local: NetworkConfig = _create_local_config(default_provider="test")
     default_network: str = LOCAL_NETWORK_NAME
 

@@ -8,6 +8,8 @@ base
 │   └── geth  (default)
 ├── goerli
 │   └── geth  (default)
+├── sepolia
+│   └── geth  (default)
 └── local  (default)
     └── test  (default)
 """.strip()
@@ -48,6 +50,7 @@ def test_networks(runner, cli, base):
     # Do this in case local env changed it.
     base.mainnet.set_default_provider("geth")
     base.goerli.set_default_provider("geth")
+    base.sepolia.set_default_provider("geth")
 
     result = runner.invoke(cli, ["networks", "list"])
     assert_rich_text(result.output, EXPECTED_OUTPUT)
