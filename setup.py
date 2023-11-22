@@ -5,13 +5,13 @@ from setuptools import find_packages, setup
 extras_require = {
     "test": [  # `test` GitHub Action jobs uses this
         "pytest>=6.0",  # Core testing package
-        "pytest-xdist",  # multi-process runner
+        "pytest-xdist",  # Multi-process runner
         "pytest-cov",  # Coverage analyzer plugin
         "hypothesis>=6.2.0,<7.0",  # Strategy-based fuzzer
     ],
     "lint": [
-        "black>=23.10.1,<24",  # Auto-formatter and linter
-        "mypy>=1.6.1,<2",  # Static type analyzer
+        "black>=23.11.0,<24",  # Auto-formatter and linter
+        "mypy>=1.7.0,<2",  # Static type analyzer
         "types-setuptools",  # Needed for mypy type shed
         "flake8>=6.1.0,<7",  # Style linter
         "isort>=5.10.1,<6",  # Import sorting linter
@@ -58,7 +58,8 @@ setup(
     url="https://github.com/ApeWorX/ape-base",
     include_package_data=True,
     install_requires=[
-        "eth-ape>=0.6.0,<0.7",
+        "eth-ape>=0.7.0,<0.8",
+        "ethpm-types",  # Get ethpm version from ape
     ],
     python_requires=">=3.8,<4",
     extras_require=extras_require,
