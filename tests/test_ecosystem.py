@@ -22,7 +22,7 @@ def test_create_transaction(base, tx_type, eth_tester_provider):
     (TransactionType.STATIC.value, TransactionType.DYNAMIC.value, _SECOND_STATIC_TYPE),
 )
 def test_encode_transaction(tx_type, base, eth_tester_provider):
-    abi = MethodABI.parse_obj(
+    abi = MethodABI.model_validate(
         {
             "type": "function",
             "name": "fooAndBar",
