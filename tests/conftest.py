@@ -17,7 +17,7 @@ def base(networks):
     return networks.base
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def eth_tester_provider():
     if not ape.networks.active_provider or ape.networks.provider.name != "test":
         with ape.networks.base.local.use_provider("test") as provider:
