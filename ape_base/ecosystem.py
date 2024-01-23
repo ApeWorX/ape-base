@@ -2,18 +2,14 @@ from typing import ClassVar, Dict, Tuple, Type, cast
 
 from ape.api import TransactionAPI
 from ape.types import TransactionSignature
-from ape_ethereum.ecosystem import (
-    BaseEthereumConfig,
-    Ethereum,
-    NetworkConfig,
-    create_network_config,
-)
+from ape_ethereum.ecosystem import NetworkConfig, create_network_config
 from ape_ethereum.transactions import (
     AccessListTransaction,
     DynamicFeeTransaction,
     StaticFeeTransaction,
     TransactionType,
 )
+from ape_optimism import Optimism, OptimismConfig
 
 NETWORKS = {
     # chain_id, network_id
@@ -24,21 +20,21 @@ NETWORKS = {
 _SECOND_STATIC_TYPE = 126
 
 
-def _create_config() -> NetworkConfig:
-    return create_network_config(
-        block_time=2, required_confirmations=1, default_transaction_type=TransactionType.STATIC
+class BaseConfig(OptimismConfig):
+    DEFAULT_TRANSACTION_TYPE: ClassVar[int] = TransactionType.STATIC.value
+    mainnet: NetworkConfig = create_network_config(
+        block_time=2, default_transaction_type=TransactionType.STATIC
+    )
+    goerli: NetworkConfig = create_network_config(
+        block_time=2, default_transaction_type=TransactionType.STATIC
+    )
+    sepolia: NetworkConfig = create_network_config(
+        block_time=2, default_transaction_type=TransactionType.STATIC
     )
 
 
-class BaseConfig(BaseEthereumConfig):
-    DEFAULT_TRANSACTION_TYPE: ClassVar[int] = TransactionType.STATIC.value
-    NETWORKS: ClassVar[Dict[str, Tuple[int, int]]] = NETWORKS
-    mainnet: NetworkConfig = _create_config()
-    goerli: NetworkConfig = _create_config()
-    sepolia: NetworkConfig = _create_config()
-
-
-class Base(Ethereum):
+# NOTE: Since base is built on Optimism, we use Optimism as the base class.
+class Base(Optimism):
     @property
     def config(self) -> BaseConfig:  # type: ignore
         return cast(BaseConfig, self.config_manager.get_config("base"))
@@ -46,7 +42,7 @@ class Base(Ethereum):
     def create_transaction(self, **kwargs) -> TransactionAPI:
         """
         Returns a transaction using the given constructor kwargs.
-        Overridden because does not support
+        Overridden to support custom type.
 
         **kwargs: Kwargs for the transaction class.
 
