@@ -49,15 +49,15 @@ with open("./README.md") as readme:
 
 
 setup(
-    name="ape-base",
+    name="ape-blast",
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
-    description="""ape-base: Base ecosystem for Ape""",
+    description="""ape-blast: Blast ecosystem for Ape""",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="ApeWorX Ltd.",
     author_email="admin@apeworx.io",
-    url="https://github.com/ApeWorX/ape-base",
+    url="https://github.com/ApeWorX/ape-blast",
     include_package_data=True,
     install_requires=[
         "eth-ape>=0.7.6,<0.8",
@@ -66,12 +66,12 @@ setup(
     ],
     python_requires=">=3.8,<4",
     extras_require=extras_require,
-    py_modules=["ape_base"],
+    py_modules=["ape_blast"],
     license="Apache-2.0",
     zip_safe=False,
     keywords="ethereum",
     packages=find_packages(exclude=["tests", "tests.*"]),
-    package_data={"ape_base": ["py.typed"]},
+    package_data={"ape_blast": ["py.typed"]},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",

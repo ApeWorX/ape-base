@@ -20,7 +20,7 @@ NETWORKS = {
 _SECOND_STATIC_TYPE = 126
 
 
-class BaseConfig(OptimismConfig):
+class BlastConfig(OptimismConfig):
     DEFAULT_TRANSACTION_TYPE: ClassVar[int] = TransactionType.STATIC.value
     mainnet: NetworkConfig = create_network_config(
         block_time=2, default_transaction_type=TransactionType.STATIC
@@ -33,11 +33,11 @@ class BaseConfig(OptimismConfig):
     )
 
 
-# NOTE: Since base is built on Optimism, we use Optimism as the base class.
-class Base(Optimism):
+# NOTE: Since blast is built on Optimism, we use Optimism as the blast class.
+class Blast(Optimism):
     @property
-    def config(self) -> BaseConfig:  # type: ignore
-        return cast(BaseConfig, self.config_manager.get_config("base"))
+    def config(self) -> BlastConfig:  # type: ignore
+        return cast(BlastConfig, self.config_manager.get_config("blast"))
 
     def create_transaction(self, **kwargs) -> TransactionAPI:
         """

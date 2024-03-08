@@ -2,7 +2,7 @@ import pytest
 from ape_ethereum.transactions import TransactionType
 from ethpm_types import MethodABI
 
-from ape_base.ecosystem import _SECOND_STATIC_TYPE
+from ape_blast.ecosystem import _SECOND_STATIC_TYPE
 
 
 @pytest.mark.parametrize(
@@ -14,8 +14,8 @@ from ape_base.ecosystem import _SECOND_STATIC_TYPE
         {"gasPrice": 0},
     ],
 )
-def test_create_transaction_type_0(base, tx_kwargs):
-    txn = base.create_transaction(**tx_kwargs)
+def test_create_transaction_type_0(blast, tx_kwargs):
+    txn = blast.create_transaction(**tx_kwargs)
     assert txn.type == TransactionType.STATIC.value
 
 
@@ -31,12 +31,12 @@ def test_create_transaction_type_0(base, tx_kwargs):
         {"maxPriorityFeePerGas": 0},
     ],
 )
-def test_create_transaction_type_2(base, tx_kwargs):
+def test_create_transaction_type_2(blast, tx_kwargs):
     """
     Show is smart-enough to deduce type 2 transactions.
     """
 
-    txn = base.create_transaction(**tx_kwargs)
+    txn = blast.create_transaction(**tx_kwargs)
     assert txn.type == TransactionType.DYNAMIC.value
 
 
@@ -44,7 +44,7 @@ def test_create_transaction_type_2(base, tx_kwargs):
     "tx_type",
     (TransactionType.STATIC.value, TransactionType.DYNAMIC.value, _SECOND_STATIC_TYPE),
 )
-def test_encode_transaction(tx_type, base, eth_tester_provider):
+def test_encode_transaction(tx_type, blast, eth_tester_provider):
     abi = MethodABI.model_validate(
         {
             "type": "function",
@@ -55,5 +55,5 @@ def test_encode_transaction(tx_type, base, eth_tester_provider):
         }
     )
     address = "0x274b028b03A250cA03644E6c578D81f019eE1323"
-    actual = base.encode_transaction(address, abi, sender=address, type=tx_type)
+    actual = blast.encode_transaction(address, abi, sender=address, type=tx_type)
     assert actual.gas_limit == eth_tester_provider.max_gas
