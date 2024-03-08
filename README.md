@@ -1,6 +1,6 @@
 # Quick Start
 
-Ecosystem Plugin for [Base](https://base.org/) support in Ape.
+Ecosystem Plugin for [Blast](https://blast.io/) support in Ape.
 
 ## Dependencies
 
@@ -13,7 +13,7 @@ Ecosystem Plugin for [Base](https://base.org/) support in Ape.
 You can install the latest release via [`pip`](https://pypi.org/project/pip/):
 
 ```bash
-pip install ape-base
+pip install ape-blast
 ```
 
 ### via `setuptools`
@@ -21,17 +21,17 @@ pip install ape-base
 You can clone the repository and use [`setuptools`](https://github.com/pypa/setuptools) for the most up-to-date version:
 
 ```bash
-git clone https://github.com/ApeWorX/ape-base.git
-cd ape-base
+git clone https://github.com/ApeWorX/ape-blast.git
+cd ape-blast
 python3 setup.py install
 ```
 
 ## Quick Usage
 
-Installing this plugin adds support for the Base ecosystem:
+Installing this plugin adds support for the Blast ecosystem:
 
 ```
-ape console --network base:goerli 
+ape console --network blast:goerli 
 ```
 
 ## Development

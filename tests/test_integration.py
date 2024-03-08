@@ -6,8 +6,6 @@ EXPECTED_OUTPUT = """
 blast
 ├── mainnet
 │   └── geth  (default)
-├── goerli
-│   └── geth  (default)
 ├── sepolia
 │   └── geth  (default)
 └── local  (default)
@@ -49,7 +47,6 @@ def assert_rich_text(actual: str, expected: str):
 def test_networks(runner, cli, blast):
     # Do this in case local env changed it.
     blast.mainnet.set_default_provider("geth")
-    blast.goerli.set_default_provider("geth")
     blast.sepolia.set_default_provider("geth")
 
     result = runner.invoke(cli, ["networks", "list"])
