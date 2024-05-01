@@ -1,52 +1,40 @@
-from typing import Optional, Type, Union, cast
+from typing import ClassVar, Dict, Tuple, Type, cast
 
 from ape.api import TransactionAPI
-from ape.api.config import PluginConfig
-from ape.api.networks import LOCAL_NETWORK_NAME
-from ape.exceptions import ApeException
 from ape.types import TransactionSignature
-from ape_ethereum.ecosystem import Ethereum, NetworkConfig
-from ape_ethereum.transactions import DynamicFeeTransaction, StaticFeeTransaction, TransactionType
-from eth_typing import HexStr
-from eth_utils import add_0x_prefix
+from ape_ethereum.ecosystem import NetworkConfig, create_network_config
+from ape_ethereum.transactions import (
+    AccessListTransaction,
+    DynamicFeeTransaction,
+    StaticFeeTransaction,
+    TransactionType,
+)
+from ape_optimism import Optimism, OptimismConfig
 
 NETWORKS = {
     # chain_id, network_id
     "mainnet": (8453, 8453),
     "goerli": (84531, 84531),
+    "sepolia": (84532, 84532),
 }
+_SECOND_STATIC_TYPE = 126
 
 
-class ApeBaseError(ApeException):
-    """
-    Raised in the ape-base plugin.
-    """
-
-
-def _create_network_config(
-    required_confirmations: int = 1, block_time: int = 2, **kwargs
-) -> NetworkConfig:
-    return NetworkConfig(
-        required_confirmations=required_confirmations, block_time=block_time, **kwargs
+class BaseConfig(OptimismConfig):
+    DEFAULT_TRANSACTION_TYPE: ClassVar[int] = TransactionType.STATIC.value
+    mainnet: NetworkConfig = create_network_config(
+        block_time=2, default_transaction_type=TransactionType.STATIC
+    )
+    goerli: NetworkConfig = create_network_config(
+        block_time=2, default_transaction_type=TransactionType.STATIC
+    )
+    sepolia: NetworkConfig = create_network_config(
+        block_time=2, default_transaction_type=TransactionType.STATIC
     )
 
 
-def _create_local_config(default_provider: Optional[str] = None) -> NetworkConfig:
-    return _create_network_config(
-        required_confirmations=0, block_time=0, default_provider=default_provider
-    )
-
-
-class BaseConfig(PluginConfig):
-    mainnet: NetworkConfig = _create_network_config()
-    mainnet_fork: NetworkConfig = _create_local_config()
-    goerli: NetworkConfig = _create_network_config()
-    goerli_fork: NetworkConfig = _create_local_config()
-    local: NetworkConfig = _create_local_config(default_provider="test")
-    default_network: str = LOCAL_NETWORK_NAME
-
-
-class Base(Ethereum):
+# NOTE: Since base is built on Optimism, we use Optimism as the base class.
+class Base(Optimism):
     @property
     def config(self) -> BaseConfig:  # type: ignore
         return cast(BaseConfig, self.config_manager.get_config("base"))
@@ -54,64 +42,122 @@ class Base(Ethereum):
     def create_transaction(self, **kwargs) -> TransactionAPI:
         """
         Returns a transaction using the given constructor kwargs.
-        Overridden because does not support
+        Overridden to support custom type.
+
         **kwargs: Kwargs for the transaction class.
+
         Returns:
             :class:`~ape.api.transactions.TransactionAPI`
         """
 
-        transaction_type = _get_transaction_type(kwargs.get("type"))
-        kwargs["type"] = transaction_type.value
-        txn_class = _get_transaction_cls(transaction_type)
+        # Handle all aliases.
+        tx_data = dict(kwargs)
+        tx_data = _correct_key(
+            "max_priority_fee",
+            tx_data,
+            ("max_priority_fee_per_gas", "maxPriorityFeePerGas", "maxPriorityFee"),
+        )
+        tx_data = _correct_key("max_fee", tx_data, ("max_fee_per_gas", "maxFeePerGas", "maxFee"))
+        tx_data = _correct_key("gas", tx_data, ("gas_limit", "gasLimit"))
+        tx_data = _correct_key("gas_price", tx_data, ("gasPrice",))
+        tx_data = _correct_key(
+            "type",
+            tx_data,
+            ("txType", "tx_type", "txnType", "txn_type", "transactionType", "transaction_type"),
+        )
 
-        if "required_confirmations" not in kwargs or kwargs["required_confirmations"] is None:
+        # Handle unique value specifications, such as "1 ether".
+        if "value" in tx_data and not isinstance(tx_data["value"], int):
+            value = tx_data["value"] or 0  # Convert None to 0.
+            tx_data["value"] = self.conversion_manager.convert(value, int)
+
+        # None is not allowed, the user likely means `b""`.
+        if "data" in tx_data and tx_data["data"] is None:
+            tx_data["data"] = b""
+
+        # Deduce the transaction type.
+        transaction_types: Dict[int, Type[TransactionAPI]] = {
+            TransactionType.STATIC.value: StaticFeeTransaction,
+            TransactionType.DYNAMIC.value: DynamicFeeTransaction,
+            TransactionType.ACCESS_LIST.value: AccessListTransaction,
+            _SECOND_STATIC_TYPE: StaticFeeTransaction,
+        }
+
+        if "type" in tx_data:
+            if tx_data["type"] is None:
+                # Explicit `None` means used default.
+                version = self.default_transaction_type.value
+            elif isinstance(tx_data["type"], TransactionType):
+                version = tx_data["type"].value
+            elif isinstance(tx_data["type"], int):
+                version = tx_data["type"]
+            else:
+                # Using hex values or alike.
+                version = self.conversion_manager.convert(tx_data["type"], int)
+
+        elif "gas_price" in tx_data:
+            version = TransactionType.STATIC.value
+        elif "max_fee" in tx_data or "max_priority_fee" in tx_data:
+            version = TransactionType.DYNAMIC.value
+        elif "access_list" in tx_data or "accessList" in tx_data:
+            version = TransactionType.ACCESS_LIST.value
+        else:
+            version = self.default_transaction_type.value
+
+        tx_data["type"] = version
+
+        # This causes problems in pydantic for some reason.
+        # NOTE: This must happen after deducing the tx type!
+        if "gas_price" in tx_data and tx_data["gas_price"] is None:
+            del tx_data["gas_price"]
+
+        txn_class = transaction_types[version]
+
+        if "required_confirmations" not in tx_data or tx_data["required_confirmations"] is None:
             # Attempt to use default required-confirmations from `ape-config.yaml`.
             required_confirmations = 0
             active_provider = self.network_manager.active_provider
             if active_provider:
                 required_confirmations = active_provider.network.required_confirmations
 
-            kwargs["required_confirmations"] = required_confirmations
+            tx_data["required_confirmations"] = required_confirmations
 
-        if isinstance(kwargs.get("chainId"), str):
-            kwargs["chainId"] = int(kwargs["chainId"], 16)
+        if isinstance(tx_data.get("chainId"), str):
+            tx_data["chainId"] = int(tx_data["chainId"], 16)
 
-        if "hash" in kwargs:
-            kwargs["data"] = kwargs.pop("hash")
+        elif (
+            "chainId" not in tx_data or tx_data["chainId"] is None
+        ) and self.network_manager.active_provider is not None:
+            tx_data["chainId"] = self.provider.chain_id
 
-        if all(field in kwargs for field in ("v", "r", "s")):
-            kwargs["signature"] = TransactionSignature(
-                v=kwargs["v"],
-                r=bytes(kwargs["r"]),
-                s=bytes(kwargs["s"]),
+        if "input" in tx_data:
+            tx_data["data"] = tx_data.pop("input")
+
+        if all(field in tx_data for field in ("v", "r", "s")):
+            tx_data["signature"] = TransactionSignature(
+                v=tx_data["v"],
+                r=bytes(tx_data["r"]),
+                s=bytes(tx_data["s"]),
             )
 
-        return txn_class.parse_obj(kwargs)
+        if "gas" not in tx_data:
+            tx_data["gas"] = None
+
+        return txn_class(**tx_data)
 
 
-def _get_transaction_type(_type: Optional[Union[int, str, bytes]]) -> TransactionType:
-    if not _type or _type == 126:
-        return TransactionType.STATIC
+def _correct_key(key: str, data: Dict, alt_keys: Tuple[str, ...]) -> Dict:
+    if key in data:
+        return data
 
-    if _type is None:
-        _type = TransactionType.STATIC.value
-    elif isinstance(_type, int):
-        _type = f"0{_type}"
-    elif isinstance(_type, bytes):
-        _type = _type.hex()
+    # Check for alternative.
+    for possible_key in alt_keys:
+        if possible_key not in data:
+            continue
 
-    suffix = _type.replace("0x", "")
-    if len(suffix) == 1:
-        _type = f"{_type.rstrip(suffix)}0{suffix}"
-    return TransactionType(int(add_0x_prefix(HexStr(_type)), 16))
+        # Alt found: use it.
+        new_data = {k: v for k, v in data.items() if k not in alt_keys}
+        new_data[key] = data[possible_key]
+        return new_data
 
-
-def _get_transaction_cls(transaction_type: TransactionType) -> Type[TransactionAPI]:
-    transaction_types = {
-        TransactionType.STATIC: StaticFeeTransaction,
-        TransactionType.DYNAMIC: DynamicFeeTransaction,
-    }
-    if transaction_type not in transaction_types:
-        raise ApeBaseError(f"Transaction type '{transaction_type}' not supported.")
-
-    return transaction_types[transaction_type]
+    return data
