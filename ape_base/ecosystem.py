@@ -14,7 +14,6 @@ from ape_optimism import Optimism, OptimismConfig
 NETWORKS = {
     # chain_id, network_id
     "mainnet": (8453, 8453),
-    "goerli": (84531, 84531),
     "sepolia": (84532, 84532),
 }
 _SECOND_STATIC_TYPE = 126
@@ -23,9 +22,6 @@ _SECOND_STATIC_TYPE = 126
 class BaseConfig(OptimismConfig):
     DEFAULT_TRANSACTION_TYPE: ClassVar[int] = TransactionType.STATIC.value
     mainnet: NetworkConfig = create_network_config(
-        block_time=2, default_transaction_type=TransactionType.STATIC
-    )
-    goerli: NetworkConfig = create_network_config(
         block_time=2, default_transaction_type=TransactionType.STATIC
     )
     sepolia: NetworkConfig = create_network_config(

@@ -31,7 +31,7 @@ python3 setup.py install
 Installing this plugin adds support for the Base ecosystem:
 
 ```
-ape console --network base:goerli 
+ape console --network base:sepolia
 ```
 
 ## Development
