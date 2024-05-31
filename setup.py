@@ -61,7 +61,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "eth-ape>=0.8.1,<0.9",
-        "ape-optimism>=0.7.2,<0.8",
+        "ape-optimism",  # Ape determines the version
         "ethpm-types",  # Use same version as eth-ape
     ],
     python_requires=">=3.9,<4",
