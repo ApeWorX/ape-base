@@ -60,7 +60,7 @@ setup(
     url="https://github.com/ApeWorX/ape-base",
     include_package_data=True,
     install_requires=[
-        "eth-ape>=0.7.6,<0.8",
+        "eth-ape>=0.8.1,<0.9",
         "ape-optimism>=0.7.2,<0.8",
         "ethpm-types",  # Use same version as eth-ape
     ],
