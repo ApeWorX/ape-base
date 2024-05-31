@@ -1,6 +1,6 @@
 from ape import plugins
 from ape.api.networks import LOCAL_NETWORK_NAME, ForkedNetworkAPI, NetworkAPI, create_network_type
-from ape_geth import GethProvider
+from ape_node import Node
 from ape_test import LocalProvider
 
 from .ecosystem import NETWORKS, Base, BaseConfig
@@ -29,6 +29,6 @@ def networks():
 @plugins.register(plugins.ProviderPlugin)
 def providers():
     for network_name in NETWORKS:
-        yield "base", network_name, GethProvider
+        yield "base", network_name, Node
 
     yield "base", LOCAL_NETWORK_NAME, LocalProvider
