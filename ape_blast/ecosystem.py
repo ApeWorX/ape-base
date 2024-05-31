@@ -1,4 +1,4 @@
-from typing import ClassVar, Dict, Tuple, Type, cast
+from typing import ClassVar, Type, cast
 
 from ape.api import TransactionAPI
 from ape.types import TransactionSignature
@@ -72,7 +72,7 @@ class Blast(Optimism):
             tx_data["data"] = b""
 
         # Deduce the transaction type.
-        transaction_types: Dict[int, Type[TransactionAPI]] = {
+        transaction_types: dict[int, Type[TransactionAPI]] = {
             TransactionType.STATIC.value: StaticFeeTransaction,
             TransactionType.DYNAMIC.value: DynamicFeeTransaction,
             TransactionType.ACCESS_LIST.value: AccessListTransaction,
@@ -142,7 +142,7 @@ class Blast(Optimism):
         return txn_class(**tx_data)
 
 
-def _correct_key(key: str, data: Dict, alt_keys: Tuple[str, ...]) -> Dict:
+def _correct_key(key: str, data: dict, alt_keys: tuple[str, ...]) -> dict:
     if key in data:
         return data
 
