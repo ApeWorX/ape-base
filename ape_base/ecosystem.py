@@ -1,6 +1,5 @@
-from typing import ClassVar, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
-from ape.api import TransactionAPI
 from ape.types import TransactionSignature
 from ape_ethereum.ecosystem import NetworkConfig, create_network_config
 from ape_ethereum.transactions import (
@@ -10,6 +9,9 @@ from ape_ethereum.transactions import (
     TransactionType,
 )
 from ape_optimism import Optimism, OptimismConfig
+
+if TYPE_CHECKING:
+    from ape.api import TransactionAPI
 
 NETWORKS = {
     # chain_id, network_id
@@ -35,7 +37,7 @@ class Base(Optimism):
     def config(self) -> BaseConfig:  # type: ignore
         return cast(BaseConfig, self.config_manager.get_config("base"))
 
-    def create_transaction(self, **kwargs) -> TransactionAPI:
+    def create_transaction(self, **kwargs) -> "TransactionAPI":
         """
         Returns a transaction using the given constructor kwargs.
         Overridden to support custom type.
@@ -72,7 +74,7 @@ class Base(Optimism):
             tx_data["data"] = b""
 
         # Deduce the transaction type.
-        transaction_types: dict[int, type[TransactionAPI]] = {
+        transaction_types: dict[int, type["TransactionAPI"]] = {
             TransactionType.STATIC.value: StaticFeeTransaction,
             TransactionType.DYNAMIC.value: DynamicFeeTransaction,
             TransactionType.ACCESS_LIST.value: AccessListTransaction,
