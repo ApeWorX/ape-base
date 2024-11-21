@@ -23,6 +23,7 @@ def networks():
         NetworkAPI,
         create_network_type,
     )
+
     from ape_base.ecosystem import NETWORKS
 
     for network_name, network_params in NETWORKS.items():
