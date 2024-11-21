@@ -49,6 +49,27 @@ def providers():
 
 
 def __getattr__(name: str):
-    import ape_base.ecosystem as module
+    if name == "NETWORKS":
+        from ape_base.ecosystem import NETWORKS
 
-    return getattr(module, name)
+        return NETWORKS
+
+    elif name == "Base":
+        from ape_base.ecosystem import Base
+
+        return Base
+
+    elif name == "BaseConfig":
+        from ape_base.ecosystem import BaseConfig
+
+        return BaseConfig
+
+    else:
+        raise AttributeError(name)
+
+
+__all__ = [
+    "NETWORKS",
+    "Base",
+    "BaseConfig",
+]
