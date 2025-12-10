@@ -8,7 +8,7 @@ def test_gas_limit(base):
 
 
 def test_default_transaction_type(base):
-    assert base.config.mainnet.default_transaction_type == TransactionType.STATIC
+    assert base.config.mainnet.default_transaction_type == TransactionType.DYNAMIC
 
 
 def test_mainnet_fork_not_configured():

@@ -2,13 +2,10 @@ import pytest
 from ape_ethereum.transactions import TransactionType
 from ethpm_types import MethodABI
 
-from ape_base.ecosystem import _SECOND_STATIC_TYPE
-
 
 @pytest.mark.parametrize(
     "tx_kwargs",
     [
-        {},
         {"type": 0},
         {"gas_price": 0},
         {"gasPrice": 0},
@@ -22,6 +19,7 @@ def test_create_transaction_type_0(base, tx_kwargs):
 @pytest.mark.parametrize(
     "tx_kwargs",
     [
+        {},  # NOTE: Default
         {"type": 2},
         {"max_fee": 0},
         {"max_fee_per_gas": 0},
@@ -42,7 +40,7 @@ def test_create_transaction_type_2(base, tx_kwargs):
 
 @pytest.mark.parametrize(
     "tx_type",
-    (TransactionType.STATIC.value, TransactionType.DYNAMIC.value, _SECOND_STATIC_TYPE),
+    (TransactionType.STATIC.value, TransactionType.DYNAMIC.value),
 )
 def test_encode_transaction(tx_type, base, eth_tester_provider):
     abi = MethodABI.model_validate(
