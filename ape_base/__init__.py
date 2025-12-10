@@ -3,14 +3,14 @@ from ape import plugins
 
 @plugins.register(plugins.Config)
 def config_class():
-    from ape_base.ecosystem import BaseConfig
+    from .ecosystem import BaseConfig
 
     return BaseConfig
 
 
 @plugins.register(plugins.EcosystemPlugin)
 def ecosystems():
-    from ape_base.ecosystem import Base
+    from .ecosystem import Base
 
     yield Base
 
@@ -24,7 +24,7 @@ def networks():
         create_network_type,
     )
 
-    from ape_base.ecosystem import NETWORKS
+    from .ecosystem import NETWORKS
 
     for network_name, network_params in NETWORKS.items():
         yield "base", network_name, create_network_type(*network_params)
@@ -50,17 +50,17 @@ def providers():
 
 def __getattr__(name: str):
     if name == "NETWORKS":
-        from ape_base.ecosystem import NETWORKS
+        from .ecosystem import NETWORKS
 
         return NETWORKS
 
     elif name == "Base":
-        from ape_base.ecosystem import Base
+        from .ecosystem import Base
 
         return Base
 
     elif name == "BaseConfig":
-        from ape_base.ecosystem import BaseConfig
+        from .ecosystem import BaseConfig
 
         return BaseConfig
 
