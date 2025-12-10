@@ -6,7 +6,6 @@ from ethpm_types import MethodABI
 @pytest.mark.parametrize(
     "tx_kwargs",
     [
-        {},
         {"type": 0},
         {"gas_price": 0},
         {"gasPrice": 0},
@@ -20,6 +19,7 @@ def test_create_transaction_type_0(base, tx_kwargs):
 @pytest.mark.parametrize(
     "tx_kwargs",
     [
+        {},  # NOTE: Default
         {"type": 2},
         {"max_fee": 0},
         {"max_fee_per_gas": 0},
