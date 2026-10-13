@@ -22,4 +22,4 @@ class Base(Optimism):
 
     @property
     def config(self) -> BaseConfig:  # type: ignore
-        return cast(BaseConfig, self.config_manager.get_config("base"))
+        return cast("BaseConfig", self.config_manager.get_config("base"))
